@@ -1,4 +1,4 @@
-# 🚀 Home Server Platform
+# Home Server Platform
 
 > A production-inspired self-hosted platform built on Kubernetes for media streaming, infrastructure management, monitoring and future AI workloads.
 
