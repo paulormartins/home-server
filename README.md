@@ -372,7 +372,7 @@ infra/
 
 # Design Decisions
 
-## Why Kubernetes?
+## Kubernetes
 
 Instead of maintaining a growing Docker Compose file, Kubernetes provides:
 
@@ -384,7 +384,7 @@ Instead of maintaining a growing Docker Compose file, Kubernetes provides:
 
 ---
 
-## Why Traefik?
+## Traefik
 
 Chosen because it offers:
 
@@ -394,10 +394,12 @@ Chosen because it offers:
 - Future HTTPS support
 
 ---
+## Headlamp
 
 Headlamp was selected instead of Portainer because it is Kubernetes-native and provides a better operational experience for cluster management.
 
 ---
+## Homepage
 
 Homepage provides a lightweight centralized dashboard for all self-hosted services.
 
