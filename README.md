@@ -8,7 +8,7 @@
 [![FFmpeg](https://img.shields.io/badge/Transcoder-FFmpeg%207.1-007808?style=flat-square&logo=ffmpeg&logoColor=white)](https://ffmpeg.org/)
 [![Storage](https://img.shields.io/badge/Storage-Samba%20%2F%20CIFS-FF6600?style=flat-square)](https://www.samba.org/)
 
-A distributed, production-grade homelab architecture built on **Ubuntu Server**, declarative **Kubernetes (k3d)** container orchestration, and remote **NVIDIA GPU acceleration (WSL2 / Linux)**.
+A distributed, production-grade homelab architecture built on **Ubuntu Server**, declarative **Kubernetes (k3d)** container orchestration, and remote **NVIDIA GPU acceleration (Windows 11 / WSL2)**.
 
 This infrastructure decouples 24/7 low-power containerized microservices and persistent network storage from high-throughput, compute-intensive hardware graphics tasks. The system features a custom distributed batch engine, **Media-Farm**, which leverages **Map-Reduce Parallel Media Chunking** to transcode 4K UHD and Remux master media into web-optimized companion files concurrently across multiple NVENC hardware engines, fully orchestrated via **Radarr** and **Sonarr** Webhooks with automated **Jellyfin** library synchronization.
 
@@ -31,7 +31,7 @@ This infrastructure decouples 24/7 low-power containerized microservices and per
 - [7. Security & Network Isolation](#7-security--network-isolation)
 - [8. Repository Structure](#8-repository-structure)
 - [9. Setup & Deployment Guide](#9-setup--deployment-guide)
-  - [9.1 Prerequisites](#91-prerequisites)
+  - [9.1 Stack](#91-stack)
   - [9.2 Control Plane (Brain Node) Deployment](#92-control-plane-brain-node-deployment)
   - [9.3 GPU Worker Deployment](#93-gpu-worker-deployment)
   - [9.4 Webhook Ingestion Configuration](#94-webhook-ingestion-configuration)
@@ -51,7 +51,7 @@ The homelab is structured around two dedicated compute tiers interconnected over
    - Hosts the **Media-Farm API**, an asynchronous FastAPI orchestrator managing SQLite-backed distributed job queues and webhook receptors.
 
 2. **Distributed GPU Compute Node (Worker)**:
-   - Runs on a dedicated workstation (Windows 11 with WSL2) equipped with an NVIDIA GPU (GeForce RTX series with 9th-generation NVENC/NVDEC and pure CUDA hardware pipelines).
+   - Runs on a dedicated Windows 11 workstation with WSL2 (Ubuntu) equipped with an NVIDIA GPU (GeForce RTX series with 9th-generation NVENC/NVDEC and pure CUDA hardware pipelines).
    - Mounts the central storage volume over CIFS using high-throughput, low-latency caching parameters.
    - Executes real-time transcoding calls via `rffmpeg` SSH tunneling.
    - Runs a multi-threaded batch daemon (`media-farm-jobd.service`) that polls the Brain for chunk encoding jobs.
@@ -241,32 +241,28 @@ sequenceDiagram
     participant Storage as "Shared Storage (/media)"
     participant Jellyfin as "Jellyfin Server"
 
-    Arr->>Brain: POST /hooks/radarr or /hooks/sonarr (On Import / Upgrade)
+    Arr->>Brain: POST /hooks/radarr or /hooks/sonarr (On Import or Upgrade)
     Brain-->>Arr: 202 Accepted (Immediate response under 10ms)
     
-    Note over Brain: Background task evaluates media resolution
-    alt Media is 1080p or lower
-        Note over Brain: Processing skipped; recorded in logs
-    else Media is 4K / 2160p UHD
-        Brain->>Brain: Acquire file concurrency lock
-        Brain->>Storage: Inspect keyframes via ffprobe (under 1s)
-        Brain->>Brain: Register parent job and chunk tasks in SQLite
-        
-        loop Worker Job Polling
-            Worker->>Brain: GET /jobs/next?worker=worker-id
-            Brain-->>Worker: 200 OK (Chunk assignment)
-            Worker->>Storage: Read source video slice
-            Worker->>Worker: Hardware NVENC encode on GPU
-            Worker->>Storage: Write intermediate chunk.mkv
-            Worker->>Brain: POST /jobs/:id/done
-        end
-        
-        Brain->>Brain: Verify all chunks completed
-        Brain->>Storage: Concat and remux with master audio/subtitles (reducer.py)
-        Brain->>Storage: Write final web companion file
-        Brain->>Jellyfin: POST /Library/Refresh (API Token Authenticated)
-        Note over Jellyfin: Scans directory and binds companion version
+    Note over Brain: Inspect media: 4K UHD triggers pipeline, 1080p is skipped
+    Brain->>Brain: Acquire file concurrency lock
+    Brain->>Storage: Inspect keyframes via ffprobe (under 1s)
+    Brain->>Brain: Register parent job and chunk tasks in SQLite
+    
+    loop Parallel Worker Polling
+        Worker->>Brain: GET /jobs/next?worker=worker-id
+        Brain-->>Worker: 200 OK (Chunk assignment)
+        Worker->>Storage: Read source video chunk
+        Worker->>Worker: Hardware NVENC encode on GPU
+        Worker->>Storage: Write intermediate chunk.mkv
+        Worker->>Brain: POST /jobs/:id/done
     end
+    
+    Brain->>Brain: Verify all chunks completed
+    Brain->>Storage: Concat and remux with master audio/subtitles (reducer.py)
+    Brain->>Storage: Write final web companion file
+    Brain->>Jellyfin: POST /Library/Refresh (API Token Authenticated)
+    Note over Jellyfin: Scans library and links companion file
 ```
 
 ---
@@ -285,7 +281,7 @@ Path resolution is abstracted via `chunker.resolve_storage_path()`:
 - Automatically maps between physical host paths (`/mnt/media`) and container/network paths (`/media`).
 - All database state entries store canonical network paths (`/media/...`), ensuring jobs dispatched to remote workers execute seamlessly without path translation errors.
 
-### CIFS Mount Parameters (WSL2 / Linux Worker)
+### CIFS Mount Parameters (WSL2 Worker)
 
 The worker connects to the Samba share using high-throughput, low-latency streaming options in `/etc/fstab`:
 
@@ -344,7 +340,7 @@ The infrastructure adheres to least-privilege and credential separation standard
 │       │   │   ├── test-chunked-pipeline.py Interactive CLI runner with live ASCII progress bar
 │       │   │   └── test_*.py           Automated test suite (17 unit and integration tests)
 │       │   └── worker/
-│       │       ├── setup-worker.sh     Idempotent provisioning script for WSL2/Linux workers
+│       │       ├── setup-worker.sh     Idempotent provisioning script for WSL2 workers
 │       │       └── jellyfin-rffmpeg-health Remote worker health check executable
 │       ├── radarr/                     Radarr automation Kubernetes manifests
 │       ├── sonarr/                     Sonarr automation Kubernetes manifests
@@ -359,16 +355,18 @@ The infrastructure adheres to least-privilege and credential separation standard
 
 ### 9.1 Stack
 
-- **Control Plane**:
-  - Ubuntu Server 22.04 LTS or newer.
-  - Python 3.12+, `ffmpeg`, `ffprobe`.
-  - Docker & `k3d` (or standard Kubernetes).
-  - Samba daemon configured with read/write access to media storage.
-- **GPU Worker**:
-  - Windows 11 with WSL2 (Ubuntu).
-  - NVIDIA GPU with up-to-date drivers supporting CUDA 12+ and NVENC.
-  - OpenSSH Server installed and listening on port 22.
-  - `cifs-utils` for mounting the shared storage.
+- **Control Plane & Storage (Brain)**:
+  - OS: Ubuntu Server 22.04 LTS or newer
+  - Container Orchestration: Kubernetes (k3d) & Docker
+  - Media & Automation: Jellyfin, Radarr, Sonarr, Traefik
+  - Microservices & Scheduling: Python 3.12+, FastAPI, Uvicorn, SQLite
+  - Multimedia: FFmpeg 7+, FFprobe
+  - Storage & Sharing: ZFS / ext4, Samba (CIFS) daemon
+- **GPU Compute Node (Worker)**:
+  - OS: Windows 11 with WSL2 (Ubuntu)
+  - Acceleration: NVIDIA GeForce RTX GPU (CUDA 12+, 9th-generation NVENC/NVDEC)
+  - Remote Daemons: OpenSSH Server (port 22), systemd worker daemon (`media-farm-jobd.service`)
+  - Storage Mount: CIFS / SMB (`cifs-utils`) with low-latency streaming cache
 
 ### 9.2 Control Plane (Brain Node) Deployment
 
