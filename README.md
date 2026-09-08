@@ -106,7 +106,7 @@ flowchart TD
     FarmAPI -->|Keyframe Detection & Job Queue| FarmAPI
     JobdDaemon -->|GET /jobs/next| FarmAPI
     JobdDaemon -->|Parallel Chunk Encoding| GPU
-    JobdDaemon -->|POST /jobs/{id}/done| FarmAPI
+    JobdDaemon -->|POST /jobs/:id/done| FarmAPI
     FarmAPI -->|Lossless Concat & Mux| StoragePool
     FarmAPI -->|POST /Library/Refresh| JellyfinPod
 ```
@@ -235,36 +235,35 @@ Media-Farm operates autonomously within the home server ecosystem:
 
 ```mermaid
 sequenceDiagram
-    autonumber
-    participant Arr as Radarr / Sonarr (*Arr)
-    participant Brain as Media-Farm API (:8765)
-    participant Worker as GPU Worker Node
-    participant Storage as Shared Storage (/mnt/media)
-    participant Jellyfin as Jellyfin Media Server
+    participant Arr as "Radarr / Sonarr"
+    participant Brain as "Media-Farm Brain (:8765)"
+    participant Worker as "GPU Worker Node"
+    participant Storage as "Shared Storage (/media)"
+    participant Jellyfin as "Jellyfin Server"
 
     Arr->>Brain: POST /hooks/radarr or /hooks/sonarr (On Import / Upgrade)
-    Brain-->>Arr: 202 Accepted (Non-blocking response in <10ms)
+    Brain-->>Arr: 202 Accepted (Immediate response under 10ms)
     
     Note over Brain: Background task evaluates media resolution
     alt Media is 1080p or lower
-        Note over Brain: Processing skipped; logs recorded
+        Note over Brain: Processing skipped; recorded in logs
     else Media is 4K / 2160p UHD
         Brain->>Brain: Acquire file concurrency lock
-        Brain->>Storage: Inspect keyframes via ffprobe (<1s)
-        Brain->>Brain: Register parent job & chunk tasks in SQLite
+        Brain->>Storage: Inspect keyframes via ffprobe (under 1s)
+        Brain->>Brain: Register parent job and chunk tasks in SQLite
         
         loop Worker Job Polling
-            Worker->>Brain: GET /jobs/next?worker=<worker-id>
+            Worker->>Brain: GET /jobs/next?worker=worker-id
             Brain-->>Worker: 200 OK (Chunk assignment)
             Worker->>Storage: Read source video slice
             Worker->>Worker: Hardware NVENC encode on GPU
             Worker->>Storage: Write intermediate chunk.mkv
-            Worker->>Brain: POST /jobs/{id}/done
+            Worker->>Brain: POST /jobs/:id/done
         end
         
         Brain->>Brain: Verify all chunks completed
-        Brain->>Storage: Concat & remux with master audio/subtitles (reducer.py)
-        Brain->>Storage: Write final "[web].mkv" sibling
+        Brain->>Storage: Concat and remux with master audio/subtitles (reducer.py)
+        Brain->>Storage: Write final web companion file
         Brain->>Jellyfin: POST /Library/Refresh (API Token Authenticated)
         Note over Jellyfin: Scans directory and binds companion version
     end
@@ -358,7 +357,7 @@ The infrastructure adheres to least-privilege and credential separation standard
 
 ## 9. Setup & Deployment Guide
 
-### 9.1 Prerequisites
+### 9.1 Stack
 
 - **Control Plane**:
   - Ubuntu Server 22.04 LTS or newer.
@@ -373,20 +372,17 @@ The infrastructure adheres to least-privilege and credential separation standard
 
 ### 9.2 Control Plane (Brain Node) Deployment
 
-1. Clone this repository to the control plane server:
+1. Navigate to the project directory on the control plane server and install dependencies:
    ```bash
-   git clone https://github.com/<your-username>/home-server.git /srv/homelab
-   ```
-2. Navigate to the Media-Farm directory and install system dependencies:
-   ```bash
+   cd /srv/homelab
    sudo apt-get update && sudo apt-get install -y ffmpeg python3-fastapi python3-uvicorn
    ```
-3. Provision the systemd daemon for the Brain API:
+2. Provision the systemd daemon for the Brain API:
    ```bash
    sudo bash /srv/homelab/infra/kubernetes/jellyfin/media-farm/install-brain.sh
    sudo systemctl status media-farm-api.service
    ```
-4. Deploy the Kubernetes manifests for media services:
+3. Deploy the Kubernetes manifests for media services:
    ```bash
    kubectl apply -k /srv/homelab/infra/kubernetes/jellyfin/
    ```
