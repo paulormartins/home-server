@@ -1,458 +1,189 @@
-# Home Server Platform
+Home Server
 
-> A production-inspired self-hosted platform built on Kubernetes for media streaming, infrastructure management, monitoring and future AI workloads.
+A personal self-hosted home server built on Ubuntu and Docker, designed to provide media streaming, file sharing, monitoring, reverse proxy management, and infrastructure administration.
 
-![Kubernetes](https://img.shields.io/badge/Kubernetes-k3d-blue)
-![Linux](https://img.shields.io/badge/Linux-Ubuntu-E95420)
-![Jellyfin](https://img.shields.io/badge/Jellyfin-Media_Server-00A4DC)
-![License](https://img.shields.io/badge/License-MIT-green)
+Overview
 
----
+This project documents the implementation of a lightweight homelab environment using containerized services.
 
-# Overview
+The goal is to provide a centralized platform for:
 
-Home Server Platform is a personal infrastructure project designed to provide a modern, production-inspired environment for self-hosted services.
+Media streaming
+File sharing
+Service monitoring
+Container management
+Reverse proxy management
+Infrastructure experimentation
+Architecture
+Client Devices
+├── Windows
+├── macOS
+├── Smart TV
+└── Mobile Devices
 
-The project originally started as a simple Docker Compose deployment centered around Jellyfin and gradually evolved into a Kubernetes-based platform capable of hosting media services, monitoring tools, infrastructure dashboards and future AI workloads.
+        │
 
-Beyond its practical use as a home server, this repository also serves as a hands-on laboratory for learning:
-
-- Kubernetes
-- Linux Administration
-- Platform Engineering
-- Infrastructure as Code
-- Networking
-- Storage Management
-- Self-hosted Services
-
-The long-term goal is to create a modular platform that can be expanded with AI services, monitoring, GitOps and automation while following industry best practices.
-
----
-
-# Goals
-
-The platform was designed with the following objectives:
-
-- Build a production-inspired Kubernetes environment.
-- Learn cloud-native infrastructure concepts.
-- Centralize self-hosted services.
-- Replace Docker Compose with Kubernetes workloads.
-- Maintain persistent application data.
-- Implement scalable networking using Traefik.
-- Prepare the platform for monitoring and AI integration.
-
----
-
-# Architecture
-
-```
-                          Home Network
-                                │
-                                │
-                        Router / Local DNS
-                                │
-                                ▼
-                        Traefik Ingress
-                                │
-       ┌────────────────────────┼─────────────────────────┐
-       │                        │                         │
-       ▼                        ▼                         ▼
-   Homepage                Headlamp                  Jellyfin
-                                                        │
-                       ┌────────────────────────────────┼────────────────────────────┐
-                       ▼                                ▼                            ▼
-                    Sonarr                         Radarr                       Bazarr
-                                                        │
-                                                        ▼
-                                                 Shared Media Storage
-                                                        │
-                                                        ▼
-                                                      Samba
-```
-
----
-
-# Technology Stack
-
-## Operating System
-
-- Ubuntu Server/Desktop
-
-## Container Platform
-
-- Kubernetes (k3d)
-
-## Networking
-
-- Traefik Ingress Controller
-
-## Media
-
-- Jellyfin
-- Sonarr
-- Radarr
-- Bazarr
-
-## Infrastructure
-
-- Homepage
-- Headlamp
-
-## Monitoring
-
-- Uptime Kuma
-
-## Storage
-
-- Persistent Volumes
-- Persistent Volume Claims
-
----
-
-# Kubernetes Namespaces
-
-The cluster is organized into dedicated namespaces.
-
-```
-homelab
-│
-├── Homepage
-
-media
-│
-├── Jellyfin
-├── Sonarr
-├── Radarr
-└── Bazarr
-
-platform
-│
-├── Headlamp
-└── Traefik
-
-monitoring
-│
-└── Uptime Kuma
-
-ai
-│
-└── Future AI workloads
-```
-
-Separating workloads by namespace improves organization and simplifies maintenance.
-
----
-
-# Services
-
-## Homepage
-
-Acts as the main dashboard of the platform.
-
-Features:
-
-- Centralized access
-- Service grouping
-- Custom dashboard
-- Kubernetes deployment
-
----
-
-## Headlamp
-
-Kubernetes-native dashboard replacing Portainer.
-
-Features:
-
-- Namespace management
-- Pod inspection
-- Deployment management
-- Log viewer
-- Events
-- Persistent Volume visualization
-
----
-
-## Jellyfin
-
-Media server responsible for streaming movies and TV shows.
-
-Features:
-
-- Hardware transcoding
-- Intel VAAPI acceleration
-- SSD transcoding cache
-- Persistent configuration
-- Kubernetes Deployment
-
----
-
-## Sonarr
-
-TV Series automation.
-
-Responsibilities:
-
-- Library organization
-- Metadata
-- Automatic imports
-
----
-
-## Radarr
-
-Movie automation.
-
-Responsibilities:
-
-- Movie management
-- Library organization
-- Metadata
-
----
-
-## Bazarr
-
-Subtitle management.
-
-Responsibilities:
-
-- Subtitle download
-- Automatic synchronization
-- Multi-language support
-
----
-
-## Uptime Kuma
-
-Infrastructure monitoring.
-
-Current usage:
-
-- Service availability
-- Status dashboard
-
-Future:
-
-- Notifications
-- Alerting
-
----
-
-## Samba
-
-Network file sharing.
-
-Current shares:
-
-- Media Library
-- Shared Documents
-- Home Server Workspace
-
----
-
-# Storage Layout
-
-```
-Storage
-
-Media
-│
-├── Movies
-├── TV Shows
-├── Downloads
-
-AppData
-│
-├── Jellyfin
-├── Sonarr
-├── Radarr
-├── Bazarr
-├── Homepage
-└── Uptime Kuma
-```
-
-Application configuration and media libraries are intentionally separated to simplify upgrades and backups.
-
----
-
-# Hardware Acceleration
-
-Jellyfin uses Intel VAAPI for hardware transcoding.
-
-Current implementation includes:
-
-- Intel Iris Xe Graphics
-- VAAPI
-- HEVC Encoding
-- H.264 Encoding
-- Hardware Decoding
-- SSD-based Transcoding Directory
-
----
-
-# Migration History
-
-The project evolved through several stages.
-
-```
-Docker Compose
-
-↓
-
-Persistent Storage
-
-↓
+        ▼
 
 Reverse Proxy
+├── Nginx Proxy Manager
 
-↓
+        │
 
-Traefik
+        ▼
 
-↓
+Docker Host (Ubuntu)
+├── Jellyfin
+├── Samba
+├── Homepage
+├── Uptime Kuma
+├── Portainer
+└── AdGuard Home
 
-Kubernetes
+        │
 
-↓
+        ▼
 
-Media Stack
+Storage
+└── External Media Drive
+Services
+Jellyfin
 
-↓
+Self-hosted media server used for:
 
-Infrastructure Dashboard
+Movie streaming
+TV show streaming
+Media library management
 
-↓
+Features:
+
+Multi-device access
+Hardware acceleration support
+Centralized media catalog
+Samba
+
+File sharing service used to provide network storage access.
+
+Features:
+
+Cross-platform compatibility
+Windows and macOS support
+Shared media repository
+Portainer
+
+Docker management interface.
+
+Features:
+
+Container administration
+Volume management
+Stack deployment
+Environment monitoring
+Nginx Proxy Manager
+
+Reverse proxy solution used to simplify service access.
+
+Features:
+
+Friendly URLs
+Proxy host management
+SSL support
+Centralized routing
+Homepage
+
+Centralized dashboard used as the primary entry point for all services.
+
+Features:
+
+Service shortcuts
+Resource monitoring
+Infrastructure overview
+Uptime Kuma
+
+Monitoring platform used to verify service availability.
+
+Monitored services:
+
+Jellyfin
+Portainer
+Reverse Proxy
+Internal Services
+
+Features:
+
+Availability checks
+Response time tracking
+Status dashboard
+AdGuard Home
+
+DNS filtering and network management platform.
+
+Current status:
+
+Installed for evaluation and testing
+Not yet acting as the primary network DNS
+
+Potential future use:
+
+DNS management
+Ad blocking
+Local service discovery
+Backup Strategy
+
+A custom backup script is used to preserve critical configuration files.
+
+Protected components:
+
+Docker Compose stacks
+Reverse proxy configuration
+Samba configuration
+System configuration files
+Portainer data
+
+Backups are generated automatically and stored in dedicated backup locations.
 
 Monitoring
 
-↓
+The environment includes:
 
-AI Platform
-```
+CPU monitoring
+Memory monitoring
+Storage monitoring
+Service availability monitoring
 
----
+Monitoring is exposed through Homepage and Uptime Kuma.
 
-# Current Status
+Future Improvements
 
-| Service | Kubernetes |
-|----------|------------|
-| Homepage | ✅ |
-| Headlamp | ✅ |
-| Jellyfin | ✅ |
-| Sonarr | ✅ |
-| Radarr | ✅ |
-| Bazarr | ✅ |
-| Uptime Kuma | ✅ |
+Planned enhancements include:
 
----
+Storage optimization
+Container health monitoring
+Automated disaster recovery procedures
+Infrastructure as Code
+Kubernetes migration laboratory
+Photo management platform (Immich)
+Centralized logging
+Technologies
+Ubuntu Linux
+Docker
+Docker Compose
+Jellyfin
+Samba
+Portainer
+Nginx Proxy Manager
+Homepage
+Uptime Kuma
+AdGuard Home
+Learning Objectives
 
-# Repository Structure
+This environment serves as a practical laboratory for:
 
-```
-home-server
-
-docs/
-infra/
-scripts/
-
-infra/
-└── kubernetes/
-    ├── homepage/
-    ├── jellyfin/
-    ├── sonarr/
-    ├── radarr/
-    ├── bazarr/
-    ├── headlamp/
-    ├── monitoring/
-    └── ai/
-```
-
----
-
-# Design Decisions
-
-## Kubernetes
-
-Instead of maintaining a growing Docker Compose file, Kubernetes provides:
-
-- Better scalability
-- Resource management
-- Standardized deployments
-- Easier automation
-- Future GitOps adoption
-
----
-
-## Traefik
-
-Chosen because it offers:
-
-- Native Kubernetes integration
-- Automatic Ingress discovery
-- Lightweight architecture
-- Future HTTPS support
-
----
-## Headlamp
-
-Headlamp was selected instead of Portainer because it is Kubernetes-native and provides a better operational experience for cluster management.
-
----
-## Homepage
-
-Homepage provides a lightweight centralized dashboard for all self-hosted services.
-
----
-
-# Performance Optimizations
-
-Current optimizations include:
-
-- Hardware video transcoding
-- SSD application cache
-- SSD transcoding directory
-- Persistent storage
-- Resource limits
-- Namespace separation
-
----
-
-# Roadmap
-
-## Monitoring
-
-- [ ] Prometheus
-- [ ] Grafana
-- [ ] Node Exporter
-- [ ] kube-state-metrics
-
----
-
-## AI
-
-- [ ] Ollama
-- [ ] Open WebUI
-- [ ] OpenClaw
-- [ ] Local Knowledge Base
-
----
-
-## Media
-
-- [ ] Komga
-- [ ] Live TV
-- [ ] Threadfin
-- [ ] IPTV Integration
-
----
-
-## Platform
-
-- [ ] GitOps
-- [ ] Argo CD
-- [ ] Kustomize
-- [ ] Automated Backups
-
----
-
+Linux administration
+Container orchestration
+Self-hosting
+Networking
+Reverse proxy management
+Infrastructure monitoring
+Backup and recovery
+DevOps practices
