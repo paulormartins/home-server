@@ -75,7 +75,8 @@ flowchart TD
     rffmpegWorker -->|CUDA / NVENC| RTX
     
     %% Autonomous Batch Pipeline
-    RadarrPod & SonarrPod -->|POST /hooks/arr| FarmAPI
+    RadarrPod -->|POST /hooks/arr| FarmAPI
+    SonarrPod -->|POST /hooks/arr| FarmAPI
     FarmAPI -->|Enqueue Parent & Chunk Jobs| FarmAPI
     JobdDaemon -->|GET /jobs/next| FarmAPI
     JobdDaemon -->|CUDA Parallel Encode| RTX
@@ -87,8 +88,8 @@ flowchart TD
 
 ## 2. Services & Network Topology
 
-| Service | Internal Domain | Direct Endpoint | Description |
-|:---|:---|:---|:---|
+| Service | Description |
+|:---|:---|
 | **Jellyfin** | Central streaming media platform with distributed hardware offloading |
 | **Media-Farm API** | Distributed job scheduler, Map-Reduce orchestrator & Webhook receptor |
 | **Radarr** | Movie collection automation and management platform |
@@ -155,10 +156,10 @@ Any downloaded or upgraded 4K content is processed automatically with zero user 
 
 ```mermaid
 sequenceDiagram
-    participant Arr as Radarr / Sonarr
-    participant Brain as Media-Farm Brain (:8765)
-    participant GPU as RTX 5070 Worker
-    participant Jellyfin as Jellyfin Server
+    participant Arr as "Radarr / Sonarr"
+    participant Brain as "Media-Farm Brain (:8765)"
+    participant GPU as "RTX 5070 Worker"
+    participant Jellyfin as "Jellyfin Server"
 
     Arr->>Brain: POST /hooks/radarr or /hooks/sonarr (On File Import)
     Brain-->>Arr: 202 Accepted (instant response <10ms, prevents timeouts)
