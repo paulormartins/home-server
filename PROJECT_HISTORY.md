@@ -201,7 +201,7 @@ Implementation of high-performance distributed batch media processing via Map-Re
 
 Architecture:
 
-* **Brain**: Central Ubuntu server (`192.168.0.50:8765`) managing SQLite job queues, hierarchical job schemas, and reduce operations.
+* **Brain**: Central Ubuntu server (`192.168.x.xx:xxxx`) managing SQLite job queues, hierarchical job schemas, and reduce operations.
 * **Split Engine (`chunker.py`)**: Instant packet-level inspection (`ffprobe -show_packets`) determining keyframe-aligned, non-overlapping cuts without video decoding.
 * **GPU Worker Daemon (`jobd.py`)**: Multi-threaded worker pool on WSL2 executing up to 2 simultaneous NVENC sessions in pure CUDA hardware acceleration (`hevc_nvenc`).
 * **Reduce Engine (`reducer.py`)**: Lossless FFmpeg concatenation (`-c copy`) and master audio/subtitle remux preserving Dolby Atmos, TrueHD, DTS-HD MA, PGS, and chapters with duration integrity verification.
@@ -455,7 +455,6 @@ Infrastructure currently provides:
 ## Future Roadmap
 
 * Storage optimization
-* Immich deployment
 * Infrastructure as Code
 * Monitoring enhancements
 * Kubernetes laboratory
