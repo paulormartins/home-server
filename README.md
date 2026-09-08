@@ -22,8 +22,7 @@ The ecosystem combines real-time media streaming, declarative container orchestr
 - [4. Media-Farm: Map-Reduce Parallel Media Chunking](#4-media-farm-map-reduce-parallel-media-chunking)
 - [5. Hands-Off Automation via Webhooks (Radarr / Sonarr)](#5-hands-off-automation-via-webhooks-radarr--sonarr)
 - [6. Repository Structure](#6-repository-structure)
-- [7. Operations Guide & Useful Commands](#7-operations-guide--useful-commands)
-- [8. Homelab Roadmap](#8-homelab-roadmap)
+- [7. Homelab Roadmap](#7-homelab-roadmap)
 
 ---
 
